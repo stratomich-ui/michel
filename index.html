@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfico de radar · Comparativa de modelos LLM 2026</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #1e2f47;
+            line-height: 1.5;
+            padding: 2rem 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            max-width: 1300px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            padding: 2.5rem 2rem;
+            border: 1px solid #e6ecf2;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e0e8ef;
+            padding-bottom: 1.2rem;
+        }
+
+        .header h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: #0b263f;
+            margin-bottom: 0.25rem;
+        }
+
+        .header .sub {
+            color: #546e7a;
+            font-size: 0.95rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .header .sub span {
+            background-color: #edf3f8;
+            padding: 0.2rem 1rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            border: 1px solid #cbdae9;
+        }
+
+        .radar-wrapper {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin: 2rem 0 1.5rem 0;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            flex: 2;
+            min-width: 550px;
+            height: 550px;
+            position: relative;
+            background: #ffffff;
+            border-radius: 26px;
+            padding: 10px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        .legend-panel {
+            flex: 1;
+            min-width: 260px;
+            background: #fafdff;
+            border-radius: 24px;
+            padding: 1.8rem 1.4rem;
+            border: 1px solid #e3ebf5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+
+        .legend-panel h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #17345c;
+            margin-bottom: 1.4rem;
+            border-left: 4px solid #2b4f8e;
+            padding-left: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1.2rem;
+            font-size: 0.95rem;
+            color: #1e3b5c;
+        }
+
+        .color-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+        }
+
+        .model-name {
+            font-weight: 600;
+            width: 120px;
+        }
+
+        .model-desc {
+            color: #476581;
+            font-size: 0.8rem;
+        }
+
+        .axis-note {
+            margin-top: 1.8rem;
+            padding-top: 1.2rem;
+            border-top: 1px dashed #bccfdf;
+            font-size: 0.85rem;
+            color: #3f5e7c;
+        }
+
+        .axis-note p {
+            margin-bottom: 0.3rem;
+            font-weight: 500;
+        }
+
+        .axis-note ul {
+            list-style: none;
+            padding-left: 0.2rem;
+        }
+
+        .axis-note li {
+            padding: 0.2rem 0;
+            display: flex;
+        }
+
+        .axis-note li strong {
+            width: 110px;
+            color: #122f4e;
+        }
+
+        .footnote {
+            margin-top: 2.5rem;
+            color: #5a738b;
+            font-size: 0.8rem;
+            border-top: 1px solid #dee7f0;
+            padding-top: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+    <!-- Import Chart.js desde CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="card">
+    <div class="header">
+        <h1>Perfiles de capacidad · Modelos LLM 2026</h1>
+        <div class="sub">
+            <span>Gráfico de radar comparativo · 6 dimensiones</span>
+            <span>valores normalizados (0-100)</span>
+        </div>
+    </div>
+
+    <!-- Contenedor principal: gráfico + leyenda explicativa -->
+    <div class="radar-wrapper">
+        <!-- Canvas para el radar -->
+        <div class="canvas-container">
+            <canvas id="radarChart"></canvas>
+        </div>
+
+        <!-- Panel lateral con descripción de modelos y dimensiones -->
+        <div class="legend-panel">
+            <h3>Modelos analizados</h3>
+            <div class="legend-item">
+                <div class="color-dot" style="background-color: #1f3a6b;"></div>
+                <span class="model-name">Claude Opus 4.6</span>
+                <span class="model-desc">Anthropic</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background-color: #2b6f9c;"></div>
+                <span class="model-name">Gemini 3.1 Pro</span>
+                <span class="model-desc">Google</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background-color: #3b7a5e;"></div>
+                <span class="model-name">DeepSeek R1</span>
+                <span class="model-desc">DeepSeek (open)</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background-color: #b15833;"></div>
+                <span class="model-name">Qwen3-235B</span>
+                <span class="model-desc">Alibaba</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-dot" style="background-color: #7b3f6b;"></div>
+                <span class="model-name">GPT-5.3 Codex</span>
+                <span class="model-desc">OpenAI</span>
+            </div>
+
+            <!-- Ejes / dimensiones explicadas -->
+            <div class="axis-note">
+                <p>📐 Dimensiones de evaluación</p>
+                <ul>
+                    <li><strong>Razonamiento</strong> capacidad lógica, GPQA / ARC</li>
+                    <li><strong>Codificación</strong> rendimiento en SWE‑Bench, HumanEval</li>
+                    <li><strong>Contexto largo</strong> manejo de >500K tokens</li>
+                    <li><strong>Multimodalidad</strong> soporte imagen/audio/video</li>
+                    <li><strong>Multilingüe</strong> rendimiento en idiomas no inglés</li>
+                    <li><strong>Eficiencia coste</strong> relación prestaciones / precio</li>
+                </ul>
+                <p style="margin-top: 0.8rem;">* puntuaciones estimadas basadas en benchmarks públicos y especificaciones técnicas.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nota metodológica -->
+    <div class="footnote">
+        <div>© 2026 análisis técnico · datos agregados de LMArena, PaperBench, informes de plataforma</div>
+        <div>Los valores reflejan el perfil relativo de cada modelo, no mediciones absolutas.</div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Contexto del canvas
+        const ctx = document.getElementById('radarChart').getContext('2d');
+
+        // Definición de los ejes (6 dimensiones)
+        const labels = [
+            'Razonamiento',
+            'Codificación',
+            'Contexto largo',
+            'Multimodalidad',
+            'Multilingüe',
+            'Eficiencia coste'
+        ];
+
+        // Datos de los 5 modelos: valores en escala 0-100 (mejor = más alto)
+        const datasets = [
+            {
+                label: 'Claude Opus 4.6',
+                data: [94, 96, 88, 70, 78, 58],   // razonamiento altísimo, codificación top, contexto muy alto, multimodal medio, multilingüe medio-bajo, coste bajo (caro)
+                backgroundColor: 'rgba(31, 58, 107, 0.15)',
+                borderColor: '#1f3a6b',
+                pointBackgroundColor: '#1f3a6b',
+                pointBorderColor: '#fff',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            },
+            {
+                label: 'Gemini 3.1 Pro',
+                data: [95, 84, 95, 88, 79, 82],    // razonamiento excelente, codificación buena, contexto 1M, multimodal sí, multilingüe decente, coste bueno
+                backgroundColor: 'rgba(43, 111, 156, 0.15)',
+                borderColor: '#2b6f9c',
+                pointBackgroundColor: '#2b6f9c',
+                pointBorderColor: '#fff',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            },
+            {
+                label: 'DeepSeek R1',
+                data: [92, 83, 60, 45, 63, 92],    // razonamiento muy alto, codificación buena, contexto limitado (128k), multimodal no, multilingüe medio, coste excelente
+                backgroundColor: 'rgba(59, 122, 94, 0.15)',
+                borderColor: '#3b7a5e',
+                pointBackgroundColor: '#3b7a5e',
+                pointBorderColor: '#fff',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            },
+            {
+                label: 'Qwen3-235B',
+                data: [84, 77, 92, 55, 95, 90],    // razonamiento bueno, codificación buena, contexto muy alto, multimodal bajo, multilingüe top, coste excelente
+                backgroundColor: 'rgba(177, 88, 51, 0.15)',
+                borderColor: '#b15833',
+                pointBackgroundColor: '#b15833',
+                pointBorderColor: '#fff',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            },
+            {
+                label: 'GPT-5.3 Codex',
+                data: [79, 88, 78, 82, 80, 66],    // razonamiento bueno, codificación muy buena, contexto alto, multimodal bueno, multilingüe bueno, coste medio
+                backgroundColor: 'rgba(123, 63, 107, 0.15)',
+                borderColor: '#7b3f6b',
+                pointBackgroundColor: '#7b3f6b',
+                pointBorderColor: '#fff',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            }
+        ];
+
+        // Crear el gráfico de radar
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1,                // asegurar círculo
+                plugins: {
+                    legend: {
+                        display: false,         // la leyenda la ponemos manualmente al lado (más limpio)
+                    },
+                    tooltip: {
+                        backgroundColor: '#1e2f47',
+                        titleColor: '#f0f6ff',
+                        bodyColor: '#dbe6f0',
+                        borderColor: '#2f5575',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        min: 0,
+                        ticks: {
+                            stepSize: 20,
+                            color: '#6b7f94',
+                            backdropColor: 'transparent',
+                        },
+                        grid: {
+                            color: '#d8e2ed',
+                        },
+                        angleLines: {
+                            color: '#cbd8e8',
+                        },
+                        pointLabels: {
+                            color: '#1d3b5c',
+                            font: {
+                                size: 12,
+                                weight: '500',
+                                family: 'Inter, sans-serif'
+                            }
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        borderWidth: 2,
+                    }
+                }
+            }
+        });
+    })();
+</script>
+
+<!-- Pequeña nota: en caso de que el canvas no se vea por algún motivo, se añade respaldo -->
+<noscript>
+    <div style="padding: 2rem; background: #f0f4fa; border-radius: 16px;">JavaScript necesario para visualizar el gráfico de radar.</div>
+</noscript>
+</body>
+</html>
